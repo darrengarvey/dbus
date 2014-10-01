@@ -244,17 +244,31 @@ get_parameters_for_service (BusDesktopFile *desktop_file,
                             const char     *service_name,
                             char          **exec,
                             char          **user,
+                            char          **alias,
                             DBusError      *error)
 {
   char *exec_tmp;
   char *user_tmp;
+  char *alias_tmp;
 
   exec_tmp = NULL;
   user_tmp = NULL;
+  alias_tmp = NULL;
 
   /* check the name of the service */
   if (!check_service_name (desktop_file, service_name, error))
     goto failed;
+
+  /* look up if the service is an alias to another service */
+  if (!bus_desktop_file_get_string (desktop_file,
+                                    DBUS_SERVICE_SECTION,
+                                    DBUS_SERVICE_ALIAS,
+                                    &alias_tmp,
+                                    error))
+    {
+      _DBUS_ASSERT_ERROR_IS_SET (error);
+      goto failed;
+    }
 
   /* get the complete path of the executable */
   if (!bus_desktop_file_get_string (desktop_file,
@@ -264,6 +278,14 @@ get_parameters_for_service (BusDesktopFile *desktop_file,
                                     error))
     {
       _DBUS_ASSERT_ERROR_IS_SET (error);
+      goto failed;
+    }
+
+  /* a service that is an alias shouldn't specify the exec as it doesn't mean much */
+  if (alias_tmp && exec_tmp)
+    {
+      dbus_set_error (error, DBUS_ERROR_SPAWN_SETUP_FAILED,
+                      "You can't set Alias and Exec together");
       goto failed;
     }
 
@@ -278,14 +300,25 @@ get_parameters_for_service (BusDesktopFile *desktop_file,
       goto failed;
     }
 
+  /* a service that is an alias shouldn't specify the user to run as since that's up to
+     the service file that this is an alias to */
+  if (alias_tmp && user_tmp)
+    {
+      dbus_set_error (error, DBUS_ERROR_SPAWN_SETUP_FAILED,
+                      "You can't set Alias and User together");
+      goto failed;
+    }
+
   /* only assign if all the checks passed */
   *exec = exec_tmp;
   *user = user_tmp;
+  *alias = alias_tmp;
   return TRUE;
 
 failed:
   dbus_free (exec_tmp);
   dbus_free (user_tmp);
+  dbus_free (alias_tmp);
   return FALSE;
 }
 
@@ -332,7 +365,7 @@ switch_user (char *user, DBusError *error)
 }
 
 static dbus_bool_t
-exec_for_correct_user (char *exec, char *user, DBusError *error)
+exec_for_correct_user (char *exec, char *user, char *alias, DBusError *error)
 {
   char **argv;
   int argc;
@@ -455,11 +488,12 @@ static dbus_bool_t
 launch_bus_name (const char *bus_name, BusConfigParser *parser, DBusError *error)
 {
   BusDesktopFile *desktop_file;
-  char *exec, *user;
+  char *exec, *user, *alias;
   dbus_bool_t retval;
 
   exec = NULL;
   user = NULL;
+  alias = NULL;
   retval = FALSE;
 
   /* get the correct service file for the name we are trying to activate */
@@ -468,15 +502,16 @@ launch_bus_name (const char *bus_name, BusConfigParser *parser, DBusError *error
     return FALSE;
 
   /* get exec and user for service name */
-  if (!get_parameters_for_service (desktop_file, bus_name, &exec, &user, error))
+  if (!get_parameters_for_service (desktop_file, bus_name, &exec, &user, &alias, error))
     goto finish;
 
   _dbus_verbose ("dbus-daemon-activation-helper: Name='%s'\n", bus_name);
   _dbus_verbose ("dbus-daemon-activation-helper: Exec='%s'\n", exec);
   _dbus_verbose ("dbus-daemon-activation-helper: User='%s'\n", user);
+  _dbus_verbose ("dbus-daemon-activation-helper: Alias='%s'\n", alias);
 
   /* actually execute */
-  if (!exec_for_correct_user (exec, user, error))
+  if (!exec_for_correct_user (exec, user, alias, error))
     goto finish;
 
   retval = TRUE;
@@ -484,6 +519,7 @@ launch_bus_name (const char *bus_name, BusConfigParser *parser, DBusError *error
 finish:
   dbus_free (exec);
   dbus_free (user);
+  dbus_free (alias);
   bus_desktop_file_free (desktop_file);
   return retval;
 }
