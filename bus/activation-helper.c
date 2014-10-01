@@ -506,9 +506,14 @@ launch_bus_name (const char *bus_name, BusConfigParser *parser, DBusError *error
     goto finish;
 
   _dbus_verbose ("dbus-daemon-activation-helper: Name='%s'\n", bus_name);
-  _dbus_verbose ("dbus-daemon-activation-helper: Exec='%s'\n", exec);
-  _dbus_verbose ("dbus-daemon-activation-helper: User='%s'\n", user);
-  _dbus_verbose ("dbus-daemon-activation-helper: Alias='%s'\n", alias);
+  if (alias == NULL)
+    {
+      _dbus_verbose ("dbus-daemon-activation-helper: Exec='%s'\n", exec);
+      _dbus_verbose ("dbus-daemon-activation-helper: User='%s'\n", user);
+    }
+  else
+    {
+      _dbus_verbose ("dbus-daemon-activation-helper: Alias='%s'\n", alias);
 
   /* actually execute */
   if (!exec_for_correct_user (exec, user, alias, error))
