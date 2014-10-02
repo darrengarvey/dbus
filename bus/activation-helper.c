@@ -257,28 +257,28 @@ get_parameters_for_service (BusDesktopFile *desktop_file,
   char *exec_tmp;
   char *user_tmp;
   char *alias_tmp;
+  DBusError *alias_error;
+  dbus_bool_t alias_found;
 
   exec_tmp = NULL;
   user_tmp = NULL;
   alias_tmp = NULL;
+  alias_error = NULL;
 
   /* check the name of the service */
   if (!check_service_name (desktop_file, service_name, error))
     goto failed;
 
   /* look up if the service is an alias to another service */
-  if (!bus_desktop_file_get_string (desktop_file,
-                                    DBUS_SERVICE_SECTION,
-                                    DBUS_SERVICE_ALIAS,
-                                    &alias_tmp,
-                                    error))
-    {
-      _DBUS_ASSERT_ERROR_IS_SET (error);
-      goto failed;
-    }
+  alias_found = bus_desktop_file_get_string (desktop_file,
+                                             DBUS_SERVICE_SECTION,
+                                             DBUS_SERVICE_ALIAS,
+                                             &alias_tmp,
+                                             alias_error));
 
   /* get the complete path of the executable */
-  if (!bus_desktop_file_get_string (desktop_file,
+  if (!alias_found &&
+      !bus_desktop_file_get_string (desktop_file,
                                     DBUS_SERVICE_SECTION,
                                     DBUS_SERVICE_EXEC,
                                     &exec_tmp,
