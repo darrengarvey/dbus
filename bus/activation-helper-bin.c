@@ -91,7 +91,7 @@ main (int argc, char **argv)
     }
 
   dbus_error_init (&error);
-  if (!run_launch_helper (argv[1], &error))
+  if (!run_launch_helper (argv[1], 0, &error))
     {
       /* convert error to an exit code */
       retval = convert_error_to_exit_code (&error);

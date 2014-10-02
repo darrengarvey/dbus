@@ -25,7 +25,7 @@
 #ifndef BUS_ACTIVATION_HELPER_H
 #define BUS_ACTIVATION_HELPER_H
 
-dbus_bool_t run_launch_helper (const char *bus_name, DBusError *error);
+dbus_bool_t run_launch_helper (const char *bus_name, int alias_depth, DBusError *error);
 
 
 #endif /* BUS_ACTIVATION_HELPER_H */

@@ -74,7 +74,7 @@ bus_activation_helper_oom_test (void *data)
   retval = TRUE;
 
   dbus_error_init (&error);
-  if (!run_launch_helper (service, &error))
+  if (!run_launch_helper (service, 0, &error))
     {
       _DBUS_ASSERT_ERROR_IS_SET (&error);
       /* we failed, but a OOM is good */

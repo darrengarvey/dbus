@@ -44,6 +44,13 @@
 #include <dbus/dbus-shell.h>
 #include <dbus/dbus-marshal-validate.h>
 
+/* The maximum allowed depth of service aliases. Where a service file
+   is an alias to another service, which is itself an alias to another
+   service, this constant is used to avoid infinite recursion where
+   for example service A is an alias to service B, which is an alias
+   back to service A. */
+#define DBUS_ACTIVATION_MAX_ALIAS_DEPTH 5
+
 static BusDesktopFile *
 desktop_file_for_name (BusConfigParser *parser,
                        const char *name,
@@ -485,7 +492,7 @@ out:
 }
 
 static dbus_bool_t
-launch_bus_name (const char *bus_name, BusConfigParser *parser, DBusError *error)
+launch_bus_name (const char *bus_name, BusConfigParser *parser, int alias_depth, DBusError *error)
 {
   BusDesktopFile *desktop_file;
   char *exec, *user, *alias;
@@ -518,9 +525,15 @@ launch_bus_name (const char *bus_name, BusConfigParser *parser, DBusError *error
   else
     {
       _dbus_verbose ("dbus-daemon-activation-helper: Alias='%s'\n", alias);
+      if (alias_depth >= DBUS_ACTIVATION_MAX_ALIAS_DEPTH)
+        {
+          dbus_set_error (error, DBUS_ERROR_SPAWN_SETUP_FAILED,
+                          "Maximum recursion of aliased services reached.");
+          goto finish;
+        }
 
       /* execute the aliased service */
-      if (!run_launch_helper (alias, error))
+      if (!run_launch_helper (alias, alias_depth, error))
         goto finish;
     }
 
@@ -556,6 +569,7 @@ check_dbus_user (BusConfigParser *parser, DBusError *error)
 
 dbus_bool_t
 run_launch_helper (const char *bus_name,
+                   int alias_depth,
                    DBusError  *error)
 {
   BusConfigParser *parser;
@@ -581,7 +595,7 @@ run_launch_helper (const char *bus_name,
     goto error_free_parser;
 
   /* launch the bus with the service defined user */
-  if (!launch_bus_name (bus_name, parser, error))
+  if (!launch_bus_name (bus_name, parser, alias_depth, error))
     goto error_free_parser;
 
   /* woohoo! */
