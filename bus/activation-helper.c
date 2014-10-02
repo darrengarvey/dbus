@@ -510,14 +510,19 @@ launch_bus_name (const char *bus_name, BusConfigParser *parser, DBusError *error
     {
       _dbus_verbose ("dbus-daemon-activation-helper: Exec='%s'\n", exec);
       _dbus_verbose ("dbus-daemon-activation-helper: User='%s'\n", user);
+
+      /* actually execute */
+      if (!exec_for_correct_user (exec, user, alias, error))
+        goto finish;
     }
   else
     {
       _dbus_verbose ("dbus-daemon-activation-helper: Alias='%s'\n", alias);
 
-  /* actually execute */
-  if (!exec_for_correct_user (exec, user, alias, error))
-    goto finish;
+      /* execute the aliased service */
+      if (!run_launch_helper (alias, error))
+        goto finish;
+    }
 
   retval = TRUE;
 
