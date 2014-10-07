@@ -3810,6 +3810,110 @@ check_launch_service_service_missing (BusContext     *context,
   return retval;
 }
 
+#define SERVICE_SERVICE_WITH_ALIAS_AND_EXEC "org.freedesktop.DBus.TestSuiteAliasAndExec"
+
+/* returns TRUE if the correct thing happens,
+ * but the correct thing may include OOM errors.
+ */
+static dbus_bool_t
+check_launch_service_with_alias_and_exec (BusContext     *context,
+                                          DBusConnection *connection)
+{
+  DBusMessage *message;
+  dbus_uint32_t serial;
+  dbus_bool_t retval;
+
+  message = dbus_message_new_method_call (SERVICE_SERVICE_WITH_ALIAS_AND_EXEC,
+                                          "/org/freedesktop/TestSuite",
+                                          "org.freedesktop.TestSuite",
+                                          "Echo");
+
+  if (message == NULL)
+    return TRUE;
+
+  if (!dbus_connection_send (connection, message, &serial))
+    {
+      dbus_message_unref (message);
+      return TRUE;
+    }
+
+  dbus_message_unref (message);
+  message = NULL;
+
+  bus_test_run_everything (context);
+  block_connection_until_message_from_bus (context, connection,
+               "reply to service which should fail to auto-start (alias with exec)");
+  bus_test_run_everything (context);
+
+  if (!dbus_connection_get_is_connected (connection))
+    {
+      _dbus_warn ("connection was disconnected\n");
+      return TRUE;
+    }
+
+  retval = FALSE;
+
+  message = pop_message_waiting_for_memory (connection);
+  if (message == NULL)
+    {
+      _dbus_warn ("Did not receive a reply to %s %d on %p\n",
+                  "Echo message (auto activation)", serial, connection);
+      goto out;
+    }
+
+  verbose_message_received (connection, message);
+
+  if (dbus_message_get_type (message) == DBUS_MESSAGE_TYPE_ERROR)
+    {
+      if (!dbus_message_has_sender (message, DBUS_SERVICE_DBUS))
+        {
+          _dbus_warn ("Message has wrong sender %s\n",
+                      dbus_message_get_sender (message) ?
+                      dbus_message_get_sender (message) : "(none)");
+          goto out;
+        }
+
+      if (dbus_message_is_error (message,
+                                 DBUS_ERROR_NO_MEMORY))
+        {
+          ; /* good, this is a valid response */
+        }
+      else if (dbus_message_is_error (message,
+                                      DBUS_ERROR_SERVICE_UNKNOWN))
+        {
+          _dbus_verbose("could not activate as invalid service file was not added\n");
+          ; /* good, this is expected as we shouldn't have been added to
+             * the activation list with a missing Exec key */
+        }
+      else if (dbus_message_is_error (message,
+                                      DBUS_ERROR_SPAWN_FILE_INVALID))
+        {
+          _dbus_verbose("got service file invalid\n");
+          ; /* good, this is allowed, and is the message passed back from the
+             * launch helper */
+        }
+      else
+        {
+          warn_unexpected (connection, message, "not this error");
+
+          goto out;
+        }
+    }
+  else
+    {
+      _dbus_warn ("Did not expect to successfully auto-start with alias and exec\n");
+      goto out;
+    }
+
+  retval = TRUE;
+
+ out:
+  if (message)
+    dbus_message_unref (message);
+
+  return retval;
+}
+
 #define SHELL_FAIL_SERVICE_NAME "org.freedesktop.DBus.TestSuiteShellEchoServiceFail"
 
 /* returns TRUE if the correct thing happens,
@@ -4815,6 +4919,9 @@ bus_dispatch_test_conf_fail (const DBusString *test_data_dir,
   /* this only tests the desktop.c service check */
   if (!check_launch_service_service_missing (context, foo))
     _dbus_assert_not_reached ("service missing did not trigger error");
+
+  if (!check_launch_service_with_alias_and_exec (context, foo))
+    _dbus_assert_not_reached ("alias and exec present did not trigger error");
 
   _dbus_verbose ("Disconnecting foo\n");
 

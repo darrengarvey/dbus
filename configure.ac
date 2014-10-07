@@ -1789,6 +1789,9 @@ test/data/valid-service-files-system/org.freedesktop.DBus.TestSuiteEchoService.s
 test/data/valid-service-files-system/org.freedesktop.DBus.TestSuiteSegfaultService.service
 test/data/valid-service-files-system/org.freedesktop.DBus.TestSuiteShellEchoServiceSuccess.service
 test/data/valid-service-files-system/org.freedesktop.DBus.TestSuiteShellEchoServiceFail.service
+test/data/invalid-service-files-system/org.freedesktop.DBus.TestSuiteAliasAndExec.service
+test/data/invalid-service-files-system/org.freedesktop.DBus.TestSuiteAliasAndUser.service
+test/data/invalid-service-files-system/org.freedesktop.DBus.TestSuiteAliasToSelf.service
 test/data/invalid-service-files-system/org.freedesktop.DBus.TestSuiteNoExec.service
 test/data/invalid-service-files-system/org.freedesktop.DBus.TestSuiteNoUser.service
 test/data/invalid-service-files-system/org.freedesktop.DBus.TestSuiteNoService.service

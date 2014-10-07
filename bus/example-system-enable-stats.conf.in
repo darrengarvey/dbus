@@ -11,5 +11,6 @@
     <allow send_destination="org.freedesktop.DBus"
            send_interface="org.freedesktop.DBus.Debug.Stats"/>
   </policy>
+  <listen>@DBUS_SYSTEM_BUS_DEFAULT_ADDRESS@</listen>
 
 </busconfig>

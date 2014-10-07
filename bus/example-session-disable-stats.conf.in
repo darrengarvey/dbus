@@ -11,5 +11,6 @@
     <deny send_destination="org.freedesktop.DBus"
           send_interface="org.freedesktop.DBus.Debug.Stats"/>
   </policy>
+  <listen>@DBUS_SESSION_BUS_LISTEN_ADDRESS@</listen>
 
 </busconfig>
