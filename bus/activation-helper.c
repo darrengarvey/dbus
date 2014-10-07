@@ -257,42 +257,39 @@ get_parameters_for_service (BusDesktopFile *desktop_file,
   char *exec_tmp;
   char *user_tmp;
   char *alias_tmp;
-  DBusError *alias_error;
-  dbus_bool_t alias_found;
 
   exec_tmp = NULL;
   user_tmp = NULL;
   alias_tmp = NULL;
-  alias_error = NULL;
 
   /* check the name of the service */
   if (!check_service_name (desktop_file, service_name, error))
     goto failed;
 
   /* look up if the service is an alias to another service */
-  alias_found = bus_desktop_file_get_string (desktop_file,
-                                             DBUS_SERVICE_SECTION,
-                                             DBUS_SERVICE_ALIAS,
-                                             &alias_tmp,
-                                             alias_error));
+  if (bus_desktop_file_get_string (desktop_file,
+                                   DBUS_SERVICE_SECTION,
+                                   DBUS_SERVICE_ALIAS,
+                                   &alias_tmp,
+                                   error))
+    {
+      *alias = alias_tmp;
+      return TRUE;
+    }
+  else
+    {
+      /* TODO: Notify of OOM errors, or you'll see confusing error messages. */
+      dbus_error_free (error);
+    }
 
   /* get the complete path of the executable */
-  if (!alias_found &&
-      !bus_desktop_file_get_string (desktop_file,
+  if (!bus_desktop_file_get_string (desktop_file,
                                     DBUS_SERVICE_SECTION,
                                     DBUS_SERVICE_EXEC,
                                     &exec_tmp,
                                     error))
     {
       _DBUS_ASSERT_ERROR_IS_SET (error);
-      goto failed;
-    }
-
-  /* a service that is an alias shouldn't specify the exec as it doesn't mean much */
-  if (alias_tmp && exec_tmp)
-    {
-      dbus_set_error (error, DBUS_ERROR_SPAWN_SETUP_FAILED,
-                      "You can't set Alias and Exec together");
       goto failed;
     }
 
@@ -307,19 +304,9 @@ get_parameters_for_service (BusDesktopFile *desktop_file,
       goto failed;
     }
 
-  /* a service that is an alias shouldn't specify the user to run as since that's up to
-     the service file that this is an alias to */
-  if (alias_tmp && user_tmp)
-    {
-      dbus_set_error (error, DBUS_ERROR_SPAWN_SETUP_FAILED,
-                      "You can't set Alias and User together");
-      goto failed;
-    }
-
   /* only assign if all the checks passed */
   *exec = exec_tmp;
   *user = user_tmp;
-  *alias = alias_tmp;
   return TRUE;
 
 failed:
