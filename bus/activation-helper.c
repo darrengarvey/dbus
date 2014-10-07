@@ -273,6 +273,29 @@ get_parameters_for_service (BusDesktopFile *desktop_file,
                                    &alias_tmp,
                                    error))
     {
+      /* TODO: Should we check for Exec and User field in the file and
+               warn / error if they are set? They don't make sense when
+               a service is an alias to another service, and may be
+               misleading. */
+      /*
+      if (bus_desktop_file_has_string (desktop_file,
+                                       DBUS_SERVICE_SECTION,
+                                       DBUS_SERVICE_EXEC)))
+        {
+          dbus_set_error (error, DBUS_ERROR_SPAWN_SETUP_FAILED,
+                          "You can't set Alias and Exec together");
+          goto failed;
+        }
+      if (bus_desktop_file_has_string (desktop_file,
+                                       DBUS_SERVICE_SECTION,
+                                       DBUS_SERVICE_USER)))
+        {
+          dbus_set_error (error, DBUS_ERROR_SPAWN_SETUP_FAILED,
+                          "You can't set Alias and User together");
+          goto failed;
+        }
+        */
+
       *alias = alias_tmp;
       return TRUE;
     }
