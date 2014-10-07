@@ -777,6 +777,15 @@ bus_desktop_file_get_raw (BusDesktopFile  *desktop_file,
 }
 
 dbus_bool_t
+bus_desktop_file_has_string (BusDesktopFile  *desktop_file,
+           const char      *section,
+           const char      *keyname)
+{
+  const char *raw;
+  return bus_desktop_file_get_raw (desktop_file, section, keyname, &raw);
+}
+
+dbus_bool_t
 bus_desktop_file_get_string (BusDesktopFile  *desktop_file,
 			     const char      *section,
 			     const char      *keyname,
