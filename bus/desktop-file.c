@@ -787,10 +787,10 @@ bus_desktop_file_has_string (BusDesktopFile  *desktop_file,
 
 dbus_bool_t
 bus_desktop_file_get_string (BusDesktopFile  *desktop_file,
-			     const char      *section,
-			     const char      *keyname,
-			     char           **val,
-			     DBusError       *error)
+           const char      *section,
+           const char      *keyname,
+           char           **val,
+           DBusError       *error)
 {
   const char *raw;
  

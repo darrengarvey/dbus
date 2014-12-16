@@ -3738,7 +3738,7 @@ check_launch_service_service_missing (BusContext     *context,
 
   bus_test_run_everything (context);
   block_connection_until_message_from_bus (context, connection,
-  					   "reply to service which should fail to auto-start (missing Service)");
+               "reply to service which should fail to auto-start (missing Service)");
   bus_test_run_everything (context);
 
   if (!dbus_connection_get_is_connected (connection))
